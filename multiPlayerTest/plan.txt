@@ -1,0 +1,5 @@
+server needs to have a move order
+player 1 then 2 then 3 etc
+
+after each player attacks the server needs to echo to all clients that the enemy has taken x damage has x health and that it's now player x's turn
+server also echos back how much health each player has

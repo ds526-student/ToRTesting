@@ -1,6 +1,5 @@
 import player
-import enemy
-import combat
+import server.enemy as enemy
 import os
 import socket
 import sys
@@ -19,12 +18,16 @@ def client():
     cSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     cSocket.connect((host, port))
+    response = cSocket.recv(4)
+    playerId = int.from_bytes(response, byteorder='big')
+    print(f"Connected to server as player {playerId}.")
 
     try:
         while True:
             data = input("Enter message to send to server (or 'exit' to quit): ")
             if data.lower() == 'exit':
                 break
+            data = str(playerId) + " " + data
             
             cSocket.sendall(data.encode('utf-8'))
             response = cSocket.recv(1024).decode('utf-8')
@@ -38,41 +41,41 @@ if __name__ == "__main__":
 
 
 
-print("You are now in combat with an enemy!")
+# print("You are now in combat with an enemy!")
 
-playerStats = player.playerStats()
-enemyStats = enemy.enemyStats()
+# playerStats = player.playerStats()
+# enemyStats = enemy.enemyStats()
 
-playerStats.printStats()
-enemyStats.printStats()
+# playerStats.printStats()
+# enemyStats.printStats()
 
-while (True):
-    x = input("Enter 'a' to attack, 'h' to heal, or 'r' to run: ").lower()
+# while (True):
+#     x = input("Enter 'a' to attack, 'h' to heal, or 'r' to run: ").lower()
 
-    if x == 'a':
-        playerDamage = playerStats.attack()
-        enemyStats.takeDamage(playerDamage)
+#     if x == 'a':
+#         playerDamage = playerStats.attack()
+#         enemyStats.takeDamage(playerDamage)
         
-        if enemyStats.health <= 0:
-            print("Enemy defeated!")
-            break
+#         if enemyStats.health <= 0:
+#             print("Enemy defeated!")
+#             break
         
-        enemyDamage = enemyStats.attack()
-        playerStats.takeDamage(enemyDamage)
+#         enemyDamage = enemyStats.attack()
+#         playerStats.takeDamage(enemyDamage)
 
-        playerStats.printStats()
-        enemyStats.printStats()
+#         playerStats.printStats()
+#         enemyStats.printStats()
         
-        if playerStats.health <= 0:
-            print("You have been defeated!")
-            break
+#         if playerStats.health <= 0:
+#             print("You have been defeated!")
+#             break
 
-    elif x == 'h':
-        playerStats.heal(10)
+#     elif x == 'h':
+#         playerStats.heal(10)
             
-        playerStats.printStats()
-        enemyStats.printStats()
+#         playerStats.printStats()
+#         enemyStats.printStats()
     
-    elif x == 'r':
-        print("You ran away from the battle!")
-        break
+#     elif x == 'r':
+#         print("You ran away from the battle!")
+#         break
