@@ -3,34 +3,40 @@ import sys
 import threading
 import os
 import time
+import enemy
 
 os.system('cls' if os.name == 'nt' else 'clear')
-playerCount = 0
-playerDict = {}
-playerIds = []
+playerCount = 0 # Number of players connected to the server
+playerDict = {} # Dictionary to hold player information with playerId as key
+playerIds = [] # List to hold playerIds to ensure unique playerIds
+currentPlayerTurn = 0 # Variable to hold the current player's turn
 
+# Function to start the server and listen for incoming connections
 def server(port):
-    sSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sSocket.bind(('0.0.0.0', port))
-    sSocket.listen(5)
+    sSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Create a TCP socket
+    sSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Allow the socket to be reused
+    sSocket.bind(('0.0.0.0', port)) # Bind the socket to all interfaces on the specified port
+    sSocket.listen(5) # Listen for incoming connections
 
-    print(f"Server started on port {port}")
+    print(f"Server started on port {port}") 
 
+    # Forever loop to accept incoming connections
     while True:
         cSocket, cAddress = sSocket.accept()
         threading.Thread(target=threadClient, args=(cSocket, cAddress)).start()
 
         print(f"Connection from {cAddress} has been established.")
 
-
-def createPlayer(address, port):
+# Function to create a player dictionary with address and port
+def createPlayer(address, port, playerId):
     player = {
         "address": address,
-        "port": port
+        "port": port,
+        "playerId": playerId 
     }
     return player
 
+# Function to generate a new unique playerId
 def newPlayerId():
     from random import randint
     newId = randint(1000, 9999)
@@ -39,67 +45,86 @@ def newPlayerId():
     playerIds.append(newId)
     return newId
 
-
+# Function to handle each client connection in a separate thread
 def threadClient(con, addr):
-        import time
-        global playerCount
-        playerCount += 1
+        global playerCount # Use global variable to keep track of player count
+        playerCount += 1 # Increment player count when a new player connects
+        enemyStats = enemy.enemyStats() # Create an instance of enemyStats
 
-        playerId = newPlayerId()
-        playerDict.update({playerId: createPlayer(addr[0], addr[1])})
-        
+        playerId = newPlayerId() # Generate a new unique playerId
+        playerDict.update({playerId: createPlayer(addr[0], addr[1], playerId)}) # Add the new player to the playerDict
+
         print(f"Player {playerId} connected from {playerDict[playerId]['address']}:{playerDict[playerId]['port']}")
 
-        con.sendall(playerId.to_bytes(4, byteorder='big'))
-        con.sendall(b"Welcome to the server!\n")
-        time.sleep(2)
+        con.sendall(playerId.to_bytes(4, byteorder='big')) # Send the playerId to the client as a 4-byte integer
 
-        con.sendall(b"You have now initiated the destruction process.\n")
-        con.sendall(b"Establishing encrypted connection to remote server...\n")
-        time.sleep(3)
-        con.sendall(b"Transmitting sensitive data packets...\n")
-        time.sleep(2)
-        con.sendall(b"Bypassing local firewall and security protocols...\n")
-        time.sleep(5)
-        con.sendall(b"Data transfer beginning in 5 seconds. Please do not disconnect.\n")
+        # # Wait until two players are connected before starting the game 
+        # while playerCount < 2:
+        #     con.sendall(f"Waiting for another player to connect... {playerCount}/2 players connected.\n".encode('utf-8'))
+        #     time.sleep(3)
 
-        # Count backwards from 10 to 1, sending each number every second
-        for i in range(5, 0, -1):
-            time.sleep(1)
-            con.sendall(str(i).encode('utf-8') + b"\n")
+        # global currentPlayerTurn # Use global variable to keep track of the current player's turn
+        # currentPlayerTurn = playerIds[0] # Set the first playerId as the current player's turn
 
-        # Send nonstop random lines for about 10 seconds
-        from random import randint
-        start = time.time()
-        while time.time() - start < 5:
-            random_message = ''.join(chr(randint(32, 126)) for _ in range(100))
-            con.sendall((random_message + '\n').encode('utf-8'))
 
-        con.sendall(b"\n" + b"\n" + b"\n" + b"\n" + b"jk ty for testing my server :)\n")
-        con.sendall(b"You can now try sending messages to the server <3\n")
+        # con.sendall(b"Two players are now connected. You can now start the dungeon.\n")
+        # con.sendall("Press r to start the dungeon.\n".encode('utf-8'))
+
+
+        # print(f"it is now player {currentPlayerTurn}'s turn.")
+
         # print(f"Player {playerCount} connected from {addr[0]}:{addr[1]}")
-        try:
+        try: 
+            # Continuously receive data from the client until they disconnect
             while True:
                 data = con.recv(1024).decode('utf-8')
-                if not data:
+                if not data: # If no data is received, the client has disconnected
                     print(f"Player {playerId} disconnected.")
                     del playerDict[playerId]
                     playerIds.remove(playerId)
                     break
 
-                sections = data.split(" ", 1)
-                if len(sections) < 2:
-                    print("Invalid data received, expected format: '<playerId> <message>'")
+                sections = data.split(" ", 3) # Split the data into playerId, playerName, action, value e.g. "1234 attack 50"
+                if len(sections) < 4:
+                    print("Invalid data received, expected format: '<playerId> <playerName> <action> <value>'")
+                    con.sendall(b"Invalid data format. Please send data in the format: '<playerId> <playerName> <action> <value>'\n")
                     continue
+                else:
+                    if sections[2] == "attack":
+                        # get enemy stats and print them to client and server
+                        enemyStats.printStats()
+                        con.sendall(enemyStats.getEnemyStats().encode('utf-8')) # Send the enemy stats to the client
 
-                print(f"Received data: {sections[0]} {sections[1]}")
-                response = f"Server received: {sections[1]}"
-                con.sendall(response.encode('utf-8'))
-        except Exception as e:
-            print(f"An error occurred: {e}")
+                        # return the damage dealth by the player to everyone
+                        # response = f"Player {sections[0]} attack {sections[2]}"
+                        # con.sendall(response.encode('utf-8'))
+
+                        # enemy takes damage from player attack -> print enemy stats
+                        enemyStats.takeDamage(int(sections[2])) 
+                        enemyStats.printStats()
+
+                        # current enemy health returned to clients
+                        response = f"Enemy health {enemyStats.health}/{enemyStats.maxHealth} "
+                        con.sendall(response.encode('utf-8'))
+
+                        time.sleep(0.3)
+
+                        # enemy attacks back
+                        response = f"Enemy attack {enemyStats.attack()}"
+                        con.sendall(response.encode('utf-8'))
+
+                        # print(f"Received data: {sections[0]} {sections[1]} {sections[2]}")
+                    elif sections[2] == "forfeit":
+                        print(f"Player {sections[0]} has forfeited the game.")
+                        con.sendall(b"You have forfeited the game.\n")
+                        del playerDict[int(sections[0])]
+                        playerIds.remove(int(sections[0]))
+                        break
+        except Exception:
+            print(f"Client {playerId} connected from {addr[0]}:{addr[1]} has disconnected from the server.")
+            # con.sendall(f"Player {playerId} has disconnected from the server.\n".encode('utf-8'))
         finally:
             con.close()
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

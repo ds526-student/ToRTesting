@@ -19,7 +19,6 @@ class playerStats:
 
     def attack(self):
         damage = combat.attack(self.minDmg, self.maxDmg)
-        print(f"Player attacks for {damage} damage")
         return damage
     
     def heal(self, amount):
@@ -30,4 +29,4 @@ class playerStats:
         print(f"Player heals for {amount}, health is now {self.health}/{self.maxHealth}")
 
     def printStats(self):
-        print(f"Player Stats: Health: {self.health}/{self.maxHealth}, Damage: {self.minDmg}-{self.maxDmg}") 
+        print(f"Player Stats:\nHealth: {self.health}/{self.maxHealth}\nDamage: {self.minDmg}-{self.maxDmg}") 

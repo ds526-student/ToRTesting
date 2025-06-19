@@ -24,3 +24,6 @@ class enemyStats:
     
     def printStats(self):
         print(f"Enemy Stats: Health: {self.health}/{self.maxHealth}, Damage: {self.minDmg}-{self.maxDmg}")    
+
+    def getEnemyStats(self):
+        return f"Enemy Stats {self.health}/{self.maxHealth} Damage {self.minDmg}-{self.maxDmg}\n"
