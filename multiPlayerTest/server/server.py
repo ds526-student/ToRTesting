@@ -58,13 +58,15 @@ def threadClient(con, addr):
 
         con.sendall(playerId.to_bytes(4, byteorder='big')) # Send the playerId to the client as a 4-byte integer
 
-        # # Wait until two players are connected before starting the game 
-        # while playerCount < 2:
-        #     con.sendall(f"Waiting for another player to connect... {playerCount}/2 players connected.\n".encode('utf-8'))
-        #     time.sleep(3)
+        # Wait until two players are connected before starting the game 
+        while playerCount < 2:
+            con.sendall(f"wait playercount {playerCount}".encode('utf-8'))
+            time.sleep(3)
 
-        # global currentPlayerTurn # Use global variable to keep track of the current player's turn
-        # currentPlayerTurn = playerIds[0] # Set the first playerId as the current player's turn
+        global currentPlayerTurn # Use global variable to keep track of the current player's turn
+        currentPlayerTurn = playerIds[0] # Set the first playerId as the current player's turn
+
+        
 
 
         # con.sendall(b"Two players are now connected. You can now start the dungeon.\n")
@@ -82,6 +84,7 @@ def threadClient(con, addr):
                     print(f"Player {playerId} disconnected.")
                     del playerDict[playerId]
                     playerIds.remove(playerId)
+                    playerCount -= 1
                     break
 
                 sections = data.split(" ", 3) # Split the data into playerId, playerName, action, value e.g. "1234 attack 50"

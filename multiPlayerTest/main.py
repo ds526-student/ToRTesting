@@ -29,6 +29,8 @@ def listen_for_server(cSocket):
                 print(f"Enemy Stats:\nHealth: {statResult[2]}\nDamage: {statResult[4]}")
             elif splitResult[1] == "health":
                 print(f"Enemy health: {splitResult[2]}")
+            elif splitResult[0] == "wait":
+                print(f"Waiting for another player to connect... {splitResult[1]}/2 players connected.")
         except Exception:
             print(f"You have been disconnected from the server")
             break
