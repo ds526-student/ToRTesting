@@ -9,6 +9,7 @@ import time
 
 os.system('cls' if os.name == 'nt' else 'clear')    
 playerStats = player.playerStats()
+gameStart = False
 
 def listen_for_server(cSocket):
     while True:
@@ -30,7 +31,12 @@ def listen_for_server(cSocket):
             elif splitResult[1] == "health":
                 print(f"Enemy health: {splitResult[2]}")
             elif splitResult[0] == "wait":
-                print(f"Waiting for another player to connect... {splitResult[1]}/2 players connected.")
+                print(f"Waiting for another player to connect... {splitResult[2]}/2 players connected.")
+            elif splitResult[1] == "connected":
+                print(f"Game started! {splitResult[2]} players connected.")
+                print("Dungeon is now starting!")
+                global gameStart
+                gameStart = True
         except Exception:
             print(f"You have been disconnected from the server")
             break
@@ -61,41 +67,43 @@ def client():
     listener.start()
 
     try:
-        while (True):
-            data = input("Enter 'a' to attack, 'h' to heal, or 'r' to run: ").lower()
+        while True:
+            global gameStart
+            while (gameStart):
+                data = input("Enter 'a' to attack, 'h' to heal, or 'r' to run: ").lower()
 
-            if data.lower() == 'a':
-                playerDamage = playerStats.attack()
-                data = f"{playerId} {playerName} attack {playerDamage}"
-                time.sleep(0.3)
-                print(f"You attack for {playerDamage} damage!")
-                cSocket.sendall(data.encode('utf-8'))
+                if data.lower() == 'a':
+                    playerDamage = playerStats.attack()
+                    data = f"{playerId} {playerName} attack {playerDamage}"
+                    time.sleep(0.3)
+                    print(f"You attack for {playerDamage} damage!")
+                    cSocket.sendall(data.encode('utf-8'))
 
-                # response = cSocket.recv(1024).decode('utf-8')
-                # print(f"[Server]: {response}")
-                
-                if playerStats.health <= 0:
-                    print("You have been defeated!")
+                    # response = cSocket.recv(1024).decode('utf-8')
+                    # print(f"[Server]: {response}")
+                    
+                    if playerStats.health <= 0:
+                        print("You have been defeated!")
+                        break
+
+                elif data.lower() == 'h':
+                    playerStats.heal(10)
+                        
+                    playerStats.printStats()
+
+                elif data.lower() == 'r':
+                    print("You ran away from the battle!")
                     break
 
-            elif data.lower() == 'h':
-                playerStats.heal(10)
-                    
-                playerStats.printStats()
+                elif data.lower() == 'clear':
+                    print('\033[H\033[J')
+                    continue
 
-            elif data.lower() == 'r':
-                print("You ran away from the battle!")
-                break
+                elif data.lower() == 'exit':
+                    print("Exiting the game...")
+                    break
 
-            elif data.lower() == 'clear':
-                print('\033[H\033[J')
-                continue
-
-            elif data.lower() == 'exit':
-                print("Exiting the game...")
-                break
-
-            time.sleep(0.5)
+                time.sleep(0.5)
 
     except Exception as e:
         print(f"An error occurred: {e}")

@@ -10,6 +10,7 @@ playerCount = 0 # Number of players connected to the server
 playerDict = {} # Dictionary to hold player information with playerId as key
 playerIds = [] # List to hold playerIds to ensure unique playerIds
 currentPlayerTurn = 0 # Variable to hold the current player's turn
+playerTurnCounter = 0
 
 # Function to start the server and listen for incoming connections
 def server(port):
@@ -64,9 +65,11 @@ def threadClient(con, addr):
             time.sleep(3)
 
         global currentPlayerTurn # Use global variable to keep track of the current player's turn
-        currentPlayerTurn = playerIds[0] # Set the first playerId as the current player's turn
+        global playerTurnCounter # Use global variable to keep track of the player turn counter
+        playerTurnCounter = 0 # Reset the player turn counter
+        currentPlayerTurn = playerIds[playerTurnCounter] # Set the first playerId as the current player's turn
 
-        
+        con.sendall("players connected 2".encode('utf-8'))
 
 
         # con.sendall(b"Two players are now connected. You can now start the dungeon.\n")
@@ -86,43 +89,54 @@ def threadClient(con, addr):
                     playerIds.remove(playerId)
                     playerCount -= 1
                     break
-
+                
                 sections = data.split(" ", 3) # Split the data into playerId, playerName, action, value e.g. "1234 attack 50"
-                if len(sections) < 4:
-                    print("Invalid data received, expected format: '<playerId> <playerName> <action> <value>'")
-                    con.sendall(b"Invalid data format. Please send data in the format: '<playerId> <playerName> <action> <value>'\n")
+                if sections[0] != currentPlayerTurn:
+                    con.sendall(f"It is not your turn, it is player {currentPlayerTurn}'s turn.\n".encode('utf-8'))
                     continue
                 else:
-                    if sections[2] == "attack":
-                        # get enemy stats and print them to client and server
-                        enemyStats.printStats()
-                        con.sendall(enemyStats.getEnemyStats().encode('utf-8')) # Send the enemy stats to the client
+                    if len(sections) < 4:
+                        print("Invalid data received, expected format: '<playerId> <playerName> <action> <value>'")
+                        con.sendall(b"Invalid data format. Please send data in the format: '<playerId> <playerName> <action> <value>'\n")
+                        continue
+                    else:
+                        if sections[2] == "attack":
+                            # get enemy stats and print them to client and server
+                            enemyStats.printStats()
+                            con.sendall(enemyStats.getEnemyStats().encode('utf-8')) # Send the enemy stats to the client
 
-                        # return the damage dealth by the player to everyone
-                        # response = f"Player {sections[0]} attack {sections[2]}"
-                        # con.sendall(response.encode('utf-8'))
+                            # return the damage dealth by the player to everyone
+                            # response = f"Player {sections[0]} attack {sections[2]}"
+                            # con.sendall(response.encode('utf-8'))
 
-                        # enemy takes damage from player attack -> print enemy stats
-                        enemyStats.takeDamage(int(sections[2])) 
-                        enemyStats.printStats()
+                            # enemy takes damage from player attack -> print enemy stats
+                            enemyStats.takeDamage(int(sections[2])) 
+                            enemyStats.printStats()
 
-                        # current enemy health returned to clients
-                        response = f"Enemy health {enemyStats.health}/{enemyStats.maxHealth} "
-                        con.sendall(response.encode('utf-8'))
+                            # current enemy health returned to clients
+                            response = f"Enemy health {enemyStats.health}/{enemyStats.maxHealth} "
+                            con.sendall(response.encode('utf-8'))
 
-                        time.sleep(0.3)
+                            time.sleep(0.3)
 
-                        # enemy attacks back
-                        response = f"Enemy attack {enemyStats.attack()}"
-                        con.sendall(response.encode('utf-8'))
+                            # enemy attacks back
+                            response = f"Enemy attack {enemyStats.attack()}"
+                            con.sendall(response.encode('utf-8'))
 
-                        # print(f"Received data: {sections[0]} {sections[1]} {sections[2]}")
-                    elif sections[2] == "forfeit":
-                        print(f"Player {sections[0]} has forfeited the game.")
-                        con.sendall(b"You have forfeited the game.\n")
-                        del playerDict[int(sections[0])]
-                        playerIds.remove(int(sections[0]))
-                        break
+                            # print(f"Received data: {sections[0]} {sections[1]} {sections[2]}")
+                        elif sections[2] == "forfeit":
+                            print(f"Player {sections[0]} has forfeited the game.")
+                            con.sendall(b"You have forfeited the game.\n")
+                            del playerDict[int(sections[0])]
+                            playerIds.remove(int(sections[0]))
+                            break
+
+                        if playerTurnCounter >= len(playerIds) - 1:
+                            playerTurnCounter = 0
+                        else:
+                            playerTurnCounter += 1
+
+                        currentPlayerTurn = playerIds[playerTurnCounter]
         except Exception:
             print(f"Client {playerId} connected from {addr[0]}:{addr[1]} has disconnected from the server.")
             # con.sendall(f"Player {playerId} has disconnected from the server.\n".encode('utf-8'))
