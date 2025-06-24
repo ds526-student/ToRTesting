@@ -3,7 +3,7 @@ import server.enemy as enemy
 import os
 import socket
 import sys
-import threading
+import threading 
 import combat
 import time
 
@@ -20,7 +20,7 @@ def listen_for_server(cSocket):
                 break
             response = response.decode('utf-8')
             splitResult = response.split(' ', 2)
-            print(f"Server response: {response}")
+            # print(f"Server response: {response}")
 
             if splitResult[1] == "attack":
                 playerStats.takeDamage(int(splitResult[2]))
@@ -40,7 +40,7 @@ def listen_for_server(cSocket):
                 gameStart = True
             elif splitResult[1] == "no":
                 statResult = response.split(' ', 3)
-                print(f"Not your turn. It is player {statResult[2]}'s turn.")
+                print(f"Not your turn. It is player {statResult[3]}'s turn.")
             elif splitResult[1] == "attacked":
                 print(f"Player {splitResult[0]} has attacked the enemy for {splitResult[2]} damage!")
         except Exception:

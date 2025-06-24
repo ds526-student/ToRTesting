@@ -114,15 +114,18 @@ def threadClient(con, addr):
                             # enemy takes damage from player attack -> print enemy stats
                             enemyStats.takeDamage(int(sections[3])) 
                             enemyStats.printStats()
+
                             # Find the playerId associated with the current connection (con)
-                            found_player_id = None
+                            found_player = None
                             for pid, pdata in playerDict.items():
                                 if pdata["connection"] == con:
-                                    found_player_id = pid
+                                    found_player = pdata
                                     break
-                            # found_player_id now contains the playerId for this connection, or None if not found
 
-                            pid["totalDmg"] += int(sections[3])
+                            if found_player is not None:
+                                found_player["totalDmg"] += int(sections[3])
+                            else:
+                                print("Error: Player not found for this connection.")
 
                             # current enemy health returned to clients
                             response = f"Enemy health {enemyStats.health}/{enemyStats.maxHealth} "
@@ -130,7 +133,8 @@ def threadClient(con, addr):
 
                             time.sleep(0.3)
 
-                            broadcast_attack(f"{sections[0]} attacked {sections[3]}", ignorePlayerId={pid})
+                            # Pass ignorePlayerId as an integer, not a set
+                            broadcast_attack(f"{sections[0]} attacked {sections[3]}", ignorePlayerId=int(sections[0]))
 
                             # print(f"Received data: {sections[0]} {sections[1]} {sections[2]}")
                         elif sections[2] == "forfeit":
@@ -143,14 +147,14 @@ def threadClient(con, addr):
                         if playerTurnCounter >= len(playerIds) - 1:
                             playerTurnCounter = 0
 
-                            pid = 0
-                            for pid, pdata in playerDict.items():
-                                if pdata["totalDmg"] > pid["totalDmg"]:
-                                    pid = pdata["playerId"]
-                                
-                            # enemy attacks back
-                            response = f"Enemy attack {enemyStats.attack()}"
-                            pid["connection"].sendall(response.encode('utf-8'))
+                            # Find the player with the highest totalDmg
+                            max_dmg_player = None
+                            for pdata in playerDict.values():
+                                if max_dmg_player is None or pdata["totalDmg"] > max_dmg_player["totalDmg"]:
+                                    max_dmg_player = pdata
+                            if max_dmg_player is not None:
+                                response = f"Enemy attack {enemyStats.attack()}"
+                                max_dmg_player["connection"].sendall(response.encode('utf-8'))
                         else:
                             playerTurnCounter += 1
 
